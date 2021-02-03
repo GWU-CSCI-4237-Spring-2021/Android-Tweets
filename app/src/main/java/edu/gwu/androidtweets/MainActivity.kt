@@ -1,8 +1,11 @@
 package edu.gwu.androidtweets
 
+import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
+import android.text.Editable
+import android.text.TextWatcher
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ProgressBar
@@ -24,11 +27,29 @@ class MainActivity : AppCompatActivity() {
         login = findViewById(R.id.login)
         progressBar = findViewById(R.id.progressBar)
 
-        // TODO - re-enable this line
-        // login.setEnabled(false)
+        login.isEnabled = false
 
-        login.setOnClickListener {
-            Log.d("MainActivity", "Button clicked!")
+        login.setOnClickListener { v: View ->
+
+            val intent = Intent(this, TweetsActivity::class.java)
+            intent.putExtra("LOCATION", "Washington, D.C.")
+            startActivity(intent)
+        }
+
+        username.addTextChangedListener(textWatcher)
+        password.addTextChangedListener(textWatcher)
+    }
+
+    private val textWatcher = object : TextWatcher {
+        override fun afterTextChanged(s: Editable?) {}
+
+        override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+
+        override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+            val inputtedUsername: String = username.text.toString()
+            val inputtedPassword: String = password.text.toString()
+            val enableButton: Boolean = inputtedUsername.isNotEmpty() && inputtedPassword.isNotEmpty()
+            login.isEnabled = enableButton
         }
     }
 }
