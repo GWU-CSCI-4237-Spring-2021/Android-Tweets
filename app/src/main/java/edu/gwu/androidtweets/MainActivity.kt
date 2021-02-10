@@ -48,13 +48,12 @@ class MainActivity : AppCompatActivity() {
         // Using a lambda to implement a View.OnClickListener interface. We can do this because
         // an OnClickListener is an interface that only requires *one* function.
         login.setOnClickListener { v: View ->
-
             // An Intent is used to start a new Activity
             // 1st param == a "Context" which is a reference point into the Android system. All Activities are Contexts by inheritance.
             // 2nd param == the Class-type of the Activity you want to navigate to.
             // An Intent can also be used like a Map (key-value pairs) to pass data between Activities.
-            val intent = Intent(this, TweetsActivity::class.java)
-            intent.putExtra("LOCATION", "Washington, D.C.")
+            val intent = Intent(this, MapsActivity::class.java)
+            // intent.putExtra("LOCATION", "Washington, D.C.")
             startActivity(intent)
         }
 

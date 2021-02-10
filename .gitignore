@@ -84,3 +84,7 @@ lint/generated/
 lint/outputs/
 lint/tmp/
 lint/reports/
+
+# Normally, you can uncomment this line to avoid checking your API key into GitHub.
+# I'm allowing mine to be checked in so you all can build the lecture app.
+# google_maps_api.xml
