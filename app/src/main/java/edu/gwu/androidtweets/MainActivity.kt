@@ -1,5 +1,6 @@
 package edu.gwu.androidtweets
 
+import android.content.Context
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -25,6 +26,8 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val preferences = getSharedPreferences("android-tweets", Context.MODE_PRIVATE)
+
         // Equivalent of a System.out.println (Android has different logging levels to organize logs -- .d is for DEBUG)
         // First parameter = the "tag" allows you to find related logging statements easier (e.g. all logs in the MainActivity)
         // Second parameter = the actual thing you want to log
@@ -48,18 +51,30 @@ class MainActivity : AppCompatActivity() {
         // Using a lambda to implement a View.OnClickListener interface. We can do this because
         // an OnClickListener is an interface that only requires *one* function.
         login.setOnClickListener { v: View ->
+            val inputtedUsername: String = username.text.toString()
+
+            // Save username to SharedPreferences, so it can be restored on next app launch
+            preferences.edit()
+                .putString("username", inputtedUsername)
+                .apply()
+
             // An Intent is used to start a new Activity
             // 1st param == a "Context" which is a reference point into the Android system. All Activities are Contexts by inheritance.
             // 2nd param == the Class-type of the Activity you want to navigate to.
             // An Intent can also be used like a Map (key-value pairs) to pass data between Activities.
-            val intent = Intent(this, MapsActivity::class.java)
-            // intent.putExtra("LOCATION", "Washington, D.C.")
+            val intent = Intent(this, TweetsActivity::class.java)
+             intent.putExtra("LOCATION", "San Francisco")
             startActivity(intent)
         }
 
         // Using the same TextWatcher instance for both EditTexts so the same block of code runs on each character.
         username.addTextChangedListener(textWatcher)
         password.addTextChangedListener(textWatcher)
+
+
+        // Restore username from SharedPreferences, if it had been saved during a previous session
+        val savedUsername = preferences.getString("username", "")
+        username.setText(savedUsername)
     }
 
     // Another example of explicitly implementing an interface (TextWatcher). We cannot use
