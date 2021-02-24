@@ -1,10 +1,13 @@
 package edu.gwu.androidtweets
 
+import android.content.Intent
 import android.location.Address
 import android.location.Geocoder
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import android.widget.Button
+import android.widget.ImageButton
 import android.widget.Toast
 
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -19,12 +22,30 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private lateinit var mMap: GoogleMap
 
+    private lateinit var currentLocation: ImageButton
+
+    private lateinit var confirm: Button
+
+    private var currentAddress: Address? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_maps)
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         val mapFragment = supportFragmentManager
             .findFragmentById(R.id.map) as SupportMapFragment
+
+        currentLocation = findViewById(R.id.current_location)
+        confirm = findViewById(R.id.confirm)
+
+        confirm.isEnabled = false
+        confirm.setOnClickListener {
+            if (currentAddress != null) {
+                val intent = Intent(this, TweetsActivity::class.java)
+                intent.putExtra("address", currentAddress)
+                startActivity(intent)
+            }
+        }
 
         // Triggers the loading of the map
         mapFragment.getMapAsync(this)
@@ -73,12 +94,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                         val firstResult = results.first()
                         val postalAddress = firstResult.getAddressLine(0)
 
-                        val toast = Toast.makeText(
-                            this@MapsActivity,
-                            "You clicked: $postalAddress",
-                            Toast.LENGTH_LONG
-                        )
-                        toast.show()
+                        updateConfirmButton(firstResult)
 
                         // Add a map marker where the user tapped and pan the camera over
                         mMap.addMarker(MarkerOptions().position(coords).title(postalAddress))
@@ -95,5 +111,22 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 }
             }
         }
+    }
+
+    /**
+     * Flips the button color from red --> green and updates the icon
+     */
+    private fun updateConfirmButton(address: Address) {
+        val greenColor = getColor(R.color.buttonGreen)
+        val checkIcon = getDrawable(R.drawable.ic_check)
+
+        confirm.isEnabled = true
+        confirm.text = address.getAddressLine(0)
+        confirm.setBackgroundColor(greenColor)
+
+        // The four parameters here are the icon you want shown on each of the four sides of the button
+        confirm.setCompoundDrawablesWithIntrinsicBounds(checkIcon, null, null, null)
+
+        currentAddress = address
     }
 }

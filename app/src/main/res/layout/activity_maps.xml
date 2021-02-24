@@ -23,8 +23,10 @@
         android:layout_marginBottom="16dp"
         android:background="@color/buttonRed"
         android:drawableStart="@drawable/ic_cancel"
-        android:text="Button"
+        android:text="@string/choose_location"
         android:textColor="@android:color/white"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
         app:layout_constraintBottom_toBottomOf="@+id/map"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
