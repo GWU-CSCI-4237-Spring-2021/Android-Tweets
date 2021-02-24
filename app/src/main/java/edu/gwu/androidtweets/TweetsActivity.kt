@@ -1,5 +1,6 @@
 package edu.gwu.androidtweets
 
+import android.location.Address
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -18,18 +19,23 @@ class TweetsActivity : AppCompatActivity() {
 
         // Retrieve data from the Intent that launched this screen
         val intent = getIntent()
-        val location: String = intent.getStringExtra("LOCATION")!!
+        val address: Address = intent.getParcelableExtra<Address>("address")!!
+        val city = address.locality ?: "Unknown"
 
         // Kotlin-shorthand for setTitle(...)
-        title = "Tweets near $location"
+        // getString(...) reads from strings.xml and allows you to substitute in any formatting arguments
+        title = getString(R.string.tweets_title, city)
 
         recyclerView = findViewById(R.id.recyclerView)
 
         val twitterManager = TwitterManager()
+        val apiKey = getString(R.string.twitter_api_key)
+        val apiSecret = getString(R.string.twitter_api_secret)
 
         doAsync {
             try {
-                val tweets = twitterManager.retrieveTweets(37.7697583, -122.42079689999998)
+                val oAuthToken = twitterManager.retrieveOAuthToken(apiKey, apiSecret)
+                val tweets = twitterManager.retrieveTweets(oAuthToken, address.latitude, address.longitude)
 
                 runOnUiThread {
                     val adapter = TweetsAdapter(tweets)
