@@ -11,6 +11,12 @@ import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ProgressBar
+import android.widget.Toast
+import com.google.android.gms.tasks.Task
+import com.google.firebase.auth.AuthResult
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
 
 
 class MainActivity : AppCompatActivity() {
@@ -19,12 +25,17 @@ class MainActivity : AppCompatActivity() {
     private lateinit var username: EditText
     private lateinit var password: EditText
     private lateinit var login: Button
+    private lateinit var signUp: Button
     private lateinit var progressBar: ProgressBar
+
+    private lateinit var firebaseAuth: FirebaseAuth
 
     // onCreate is called the first time the Activity is to be shown to the user, so it a good spot
     // to put initialization logic.
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        firebaseAuth = FirebaseAuth.getInstance()
 
         val preferences = getSharedPreferences("android-tweets", Context.MODE_PRIVATE)
 
@@ -42,6 +53,7 @@ class MainActivity : AppCompatActivity() {
         username = findViewById(R.id.username)
         password = findViewById(R.id.password)
         login = findViewById(R.id.login)
+        signUp = findViewById(R.id.signUp)
         progressBar = findViewById(R.id.progressBar)
 
         // Kotlin shorthand for login.setEnabled(false).
@@ -52,18 +64,67 @@ class MainActivity : AppCompatActivity() {
         // an OnClickListener is an interface that only requires *one* function.
         login.setOnClickListener { v: View ->
             val inputtedUsername: String = username.text.toString()
+            val inputtedPassword: String = password.text.toString()
 
-            // Save username to SharedPreferences, so it can be restored on next app launch
-            preferences.edit()
-                .putString("username", inputtedUsername)
-                .apply()
+            firebaseAuth
+                .signInWithEmailAndPassword(inputtedUsername, inputtedPassword)
+                .addOnCompleteListener { task: Task<AuthResult> ->
 
-            // An Intent is used to start a new Activity
-            // 1st param == a "Context" which is a reference point into the Android system. All Activities are Contexts by inheritance.
-            // 2nd param == the Class-type of the Activity you want to navigate to.
-            // An Intent can also be used like a Map (key-value pairs) to pass data between Activities.
-            val intent = Intent(this, MapsActivity::class.java)
-            startActivity(intent)
+                    if (task.isSuccessful) {
+                        val currentUser = firebaseAuth.currentUser!!
+                        val email = currentUser.email
+
+                        Toast.makeText(this, getString(R.string.logged_in_as, email), Toast.LENGTH_LONG).show()
+
+                        // Save username to SharedPreferences, so it can be restored on next app launch
+                        preferences.edit()
+                            .putString("username", inputtedUsername)
+                            .apply()
+
+                        // An Intent is used to start a new Activity
+                        // 1st param == a "Context" which is a reference point into the Android system. All Activities are Contexts by inheritance.
+                        // 2nd param == the Class-type of the Activity you want to navigate to.
+                        // An Intent can also be used like a Map (key-value pairs) to pass data between Activities.
+                        val intent = Intent(this, MapsActivity::class.java)
+                        startActivity(intent)
+                    } else {
+                        val exception = task.exception
+                        if (exception is FirebaseAuthInvalidCredentialsException) {
+                            Toast.makeText(this, R.string.invalid_credentials, Toast.LENGTH_LONG).show()
+                        } else {
+                            // We could also split out other exceptions to further customize errors
+                            // https://firebase.google.com/docs/reference/android/com/google/firebase/auth/FirebaseAuthException
+                            Toast.makeText(this, getString(R.string.failed_to_login, exception), Toast.LENGTH_LONG).show()
+                        }
+                    }
+
+                }
+
+        }
+
+        signUp.setOnClickListener {
+            val inputtedUsername: String = username.text.toString()
+            val inputtedPassword: String = password.text.toString()
+
+            firebaseAuth
+                .createUserWithEmailAndPassword(inputtedUsername, inputtedPassword)
+                .addOnCompleteListener { task: Task<AuthResult> ->
+                    if (task.isSuccessful) {
+                        val currentUser = firebaseAuth.currentUser!!
+                        val email = currentUser.email
+
+                        Toast.makeText(this, getString(R.string.registered_successfully_as, email), Toast.LENGTH_LONG).show()
+                    } else {
+                        val exception = task.exception
+                        if (exception is FirebaseAuthUserCollisionException) {
+                            Toast.makeText(this, getString(R.string.account_already_exists, inputtedUsername), Toast.LENGTH_LONG).show()
+                        } else {
+                            // We could also split out other exceptions to further customize errors
+                            // https://firebase.google.com/docs/reference/android/com/google/firebase/auth/FirebaseAuthException
+                            Toast.makeText(this, getString(R.string.failed_to_register, exception), Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
         }
 
         // Using the same TextWatcher instance for both EditTexts so the same block of code runs on each character.
@@ -95,6 +156,7 @@ class MainActivity : AppCompatActivity() {
 
             // Kotlin shorthand for login.setEnabled(enableButton)
             login.isEnabled = enableButton
+            signUp.isEnabled = enableButton
         }
     }
 }
