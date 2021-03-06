@@ -6,4 +6,12 @@
     <string name="title_activity_maps">Map</string>
     <string name="tweets_title">Tweets near %1$s</string>
     <string name="choose_location">Choose a location by long-pressing!</string>
+    <string name="welcome">Welcome, %1$s</string>
+    <string name="sign_up">Sign Up</string>
+    <string name="logged_in_as">Logged in as %1$s</string>
+    <string name="invalid_credentials">Invalid credentials - confirm your username &amp; password and try again!</string>
+    <string name="failed_to_login">Failed to login: %1$s</string>
+    <string name="registered_successfully_as">Registered successfully as %1$s</string>
+    <string name="account_already_exists">An account already exists for %1$s!</string>
+    <string name="failed_to_register">Failed to register: %1$s</string>
 </resources>

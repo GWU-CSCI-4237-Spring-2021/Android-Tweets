@@ -16,6 +16,7 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.firebase.auth.FirebaseAuth
 import org.jetbrains.anko.doAsync
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
@@ -26,11 +27,18 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private lateinit var confirm: Button
 
+    private lateinit var firebaseAuth: FirebaseAuth
+
     private var currentAddress: Address? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_maps)
+
+        firebaseAuth = FirebaseAuth.getInstance()
+        val email = firebaseAuth.currentUser!!.email
+        title = getString(R.string.welcome, email)
+
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         val mapFragment = supportFragmentManager
             .findFragmentById(R.id.map) as SupportMapFragment
