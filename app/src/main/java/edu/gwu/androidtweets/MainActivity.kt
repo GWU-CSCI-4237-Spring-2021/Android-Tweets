@@ -1,5 +1,6 @@
 package edu.gwu.androidtweets
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
@@ -13,6 +14,7 @@ import android.widget.EditText
 import android.widget.ProgressBar
 import android.widget.Toast
 import com.google.android.gms.tasks.Task
+import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.auth.AuthResult
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
@@ -29,13 +31,16 @@ class MainActivity : AppCompatActivity() {
     private lateinit var progressBar: ProgressBar
 
     private lateinit var firebaseAuth: FirebaseAuth
+    private lateinit var firebaseAnalytics: FirebaseAnalytics
 
     // onCreate is called the first time the Activity is to be shown to the user, so it a good spot
     // to put initialization logic.
+    @SuppressLint("MissingPermission")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         firebaseAuth = FirebaseAuth.getInstance()
+        firebaseAnalytics = FirebaseAnalytics.getInstance(this)
 
         val preferences = getSharedPreferences("android-tweets", Context.MODE_PRIVATE)
 
@@ -71,6 +76,8 @@ class MainActivity : AppCompatActivity() {
                 .addOnCompleteListener { task: Task<AuthResult> ->
 
                     if (task.isSuccessful) {
+                        firebaseAnalytics.logEvent("login_success", null)
+
                         val currentUser = firebaseAuth.currentUser!!
                         val email = currentUser.email
 
@@ -88,10 +95,16 @@ class MainActivity : AppCompatActivity() {
                         val intent = Intent(this, MapsActivity::class.java)
                         startActivity(intent)
                     } else {
+
                         val exception = task.exception
+                        val bundle = Bundle()
                         if (exception is FirebaseAuthInvalidCredentialsException) {
+                            bundle.putString("error_type", "invalid_credentials")
+                            firebaseAnalytics.logEvent("login_failed", bundle)
                             Toast.makeText(this, R.string.invalid_credentials, Toast.LENGTH_LONG).show()
                         } else {
+                            bundle.putString("error_type", "generic_failure")
+                            firebaseAnalytics.logEvent("login_failed", bundle)
                             // We could also split out other exceptions to further customize errors
                             // https://firebase.google.com/docs/reference/android/com/google/firebase/auth/FirebaseAuthException
                             Toast.makeText(this, getString(R.string.failed_to_login, exception), Toast.LENGTH_LONG).show()
