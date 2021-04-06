@@ -1,8 +1,13 @@
 package edu.gwu.androidtweets
 
 import android.annotation.SuppressLint
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.location.Address
+import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.text.Editable
@@ -13,12 +18,16 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.ProgressBar
 import android.widget.Toast
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.app.TaskStackBuilder
 import com.google.android.gms.tasks.Task
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.auth.AuthResult
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
+import java.util.*
 
 
 class MainActivity : AppCompatActivity() {
@@ -122,7 +131,42 @@ class MainActivity : AppCompatActivity() {
             firebaseAuth
                 .createUserWithEmailAndPassword(inputtedUsername, inputtedPassword)
                 .addOnCompleteListener { task: Task<AuthResult> ->
+                    // Showing notification up here for ease of testing
+                    createNotificationsChannel()
+
+                    val launchIntent = Intent(this, MainActivity::class.java)
+                    launchIntent.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    val launchPendingIntent = PendingIntent.getActivity(this, 0, launchIntent, 0)
+
+                    val address = Address(Locale.US)
+                    address.setAddressLine(0, "Richmond")
+                    address.locality = "Richmond"
+                    address.adminArea = "Virginia"
+                    address.latitude = 37.5407
+                    address.longitude = -77.4360
+
+                    val tweetsIntent = Intent(this, TweetsActivity::class.java)
+                    tweetsIntent.putExtra("address", address)
+
+                    val taskStackBuilder = TaskStackBuilder.create(this)
+                    taskStackBuilder.addNextIntentWithParentStack(tweetsIntent)
+
+                    val tweetsPendingIntent = taskStackBuilder.getPendingIntent(0, 0)
+
+                    val builder = NotificationCompat.Builder(this, "default")
+                        .setContentTitle("Android Tweets")
+                        .setContentText("Welcome to Android Tweets!")
+                        .setSmallIcon(R.drawable.ic_check)
+                        .setContentIntent(launchPendingIntent)
+                        .setAutoCancel(true)
+                        .addAction(0, "Go To Virginia", tweetsPendingIntent)
+
+                    NotificationManagerCompat.from(this).notify(0, builder.build())
+
                     if (task.isSuccessful) {
+
+                        // Notification should go here ...
+
                         val currentUser = firebaseAuth.currentUser!!
                         val email = currentUser.email
 
@@ -170,6 +214,21 @@ class MainActivity : AppCompatActivity() {
             // Kotlin shorthand for login.setEnabled(enableButton)
             login.isEnabled = enableButton
             signUp.isEnabled = enableButton
+        }
+    }
+
+    private fun createNotificationsChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val id: String = "default"
+            val name: String = "Default Notifications"
+            val description: String = "The app's default notification set!"
+            val importance: Int = NotificationManager.IMPORTANCE_DEFAULT
+
+            val channel = NotificationChannel(id, name, importance)
+            channel.description = description
+
+            val notificationManager: NotificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
         }
     }
 }

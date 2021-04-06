@@ -10,11 +10,67 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.gms.tasks.Task
+import com.google.android.gms.tasks.Tasks
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
 import org.jetbrains.anko.doAsync
+import java.util.*
+import kotlin.collections.ArrayList
 import kotlin.random.Random
+
+object UserInfo
+
+object FetchFriendsListExample {
+
+    val firebaseDb = FirebaseDatabase.getInstance()
+
+    val userInfo = mutableListOf<UserInfo>()
+
+    fun fetchUserInfoList(userIds: List<String>, onCompleteListener: (List<UserInfo>) -> Unit) {
+        val reference = "users"
+        val userIdsQueue: Queue<String> = LinkedList(userIds)
+
+        val valueEventListener = object : ValueEventListener {
+            override fun onCancelled(error: DatabaseError) {
+                // ...
+            }
+
+            override fun onDataChange(snapshot: DataSnapshot) {
+                // Parse out user data from snapshot
+                userInfo.add(...)
+
+                // If there are more users we need to fetch, continue getting user info
+                val nextId = userIdsQueue.poll()
+                if (nextId != null) {
+                    firebaseDb.getReference("users/$nextId").addListenerForSingleValueEvent(this)
+                } else {
+                    // Collection is finished, invoke the original caller with the complete list
+                    onCompleteListener(userInfo)
+                }
+            }
+        }
+
+        // addListenerForSingleValueEvent is the same as addValueEventListener, except it "unsubscribes"
+        // from updates after the first data event
+        // See: https://firebase.google.com/docs/database/android/read-and-write#read_data_once
+        val firstId = userIdsQueue.poll()
+        firebaseDb.getReference("users/$firstId").addListenerForSingleValueEvent(valueEventListener)
+
+
+        // .get() gives you a "pending data Task" which you can block and wait on
+        // See: https://firebase.google.com/docs/database/android/read-and-write#read_data_once
+        val pendingData: Task<DataSnapshot> = firebaseDb.getReference("users/...").get()
+
+        // Blocks the thread until you have a result
+        // Now you need to handle all of the threading and error handling (try-catch) similar to what we've done with API calls
+        // Also see: https://developers.google.com/android/guides/tasks#chaining
+        val result: DataSnapshot = Tasks.await(pendingData)
+
+    }
+
+}
 
 class TweetsActivity : AppCompatActivity() {
 
@@ -23,6 +79,8 @@ class TweetsActivity : AppCompatActivity() {
     private lateinit var addTweet: FloatingActionButton
 
     private lateinit var firebaseDatabase: FirebaseDatabase
+
+    private val currentTweets: MutableList<Tweet> = mutableListOf()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,8 +101,17 @@ class TweetsActivity : AppCompatActivity() {
         tweetContent = findViewById(R.id.tweet_content)
         addTweet = findViewById(R.id.add_tweet)
 
-        //getTweetsFromTwitter(address)
-        getTweetsFromFirebase(address)
+        if (savedInstanceState != null) {
+            // Activity has just been rotated and our state has been saved in the bundle
+            currentTweets.addAll(savedInstanceState.getSerializable("tweets") as List<Tweet>)
+            val adapter = TweetsAdapter(currentTweets)
+            recyclerView.adapter = adapter
+            recyclerView.layoutManager = LinearLayoutManager(this@TweetsActivity) // Sets scrolling direction to vertical
+        } else {
+            // First time Activity launch, retrieve data from Twitter / Firebase
+            getTweetsFromTwitter(address)
+            //getTweetsFromFirebase(address)
+        }
     }
 
     private fun getTweetsFromFirebase(address: Address) {
@@ -108,6 +175,9 @@ class TweetsActivity : AppCompatActivity() {
                 val oAuthToken = twitterManager.retrieveOAuthToken(apiKey, apiSecret)
                 val tweets = twitterManager.retrieveTweets(oAuthToken, address.latitude, address.longitude)
 
+                currentTweets.clear()
+                currentTweets.addAll(tweets)
+
                 runOnUiThread {
                     val adapter = TweetsAdapter(tweets)
                     recyclerView.adapter = adapter
@@ -120,5 +190,12 @@ class TweetsActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+
+        val serializableList = ArrayList(currentTweets)
+        outState.putSerializable("tweets", serializableList)
     }
 }
