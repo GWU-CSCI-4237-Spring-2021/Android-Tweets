@@ -32,7 +32,7 @@ class TweetsActivity : AppCompatActivity() {
 
         // Retrieve data from the Intent that launched this screen
         val intent = getIntent()
-        val address: Address = intent.getParcelableExtra<Address>("address")!!
+        val address: Address = intent.getParcelableExtra<Address>(MapsActivity.BUNDLE_KEY_ADDRESS)!!
         val city = address.locality ?: "Unknown"
 
         // Kotlin-shorthand for setTitle(...)
@@ -43,7 +43,6 @@ class TweetsActivity : AppCompatActivity() {
         tweetContent = findViewById(R.id.tweet_content)
         addTweet = findViewById(R.id.add_tweet)
 
-        //getTweetsFromTwitter(address)
         getTweetsFromFirebase(address)
     }
 
@@ -53,19 +52,22 @@ class TweetsActivity : AppCompatActivity() {
 
         val reference: DatabaseReference = firebaseDatabase.getReference("tweets/$state")
 
-        addTweet.setOnClickListener {
-            val content = tweetContent.text.toString()
+        val shouldProcessButton = featureTogglingManager.shouldButtonBeEnabled()
+        if (shouldProcessButton) {
+            addTweet.setOnClickListener {
+                val content = tweetContent.text.toString()
 
-            if (content.isNotEmpty()) {
-                val tweet = Tweet(
-                    username = email,
-                    handle = email,
-                    content = content,
-                    iconUrl = ""
-                )
+                if (content.isNotEmpty()) {
+                    val tweet = Tweet(
+                        username = email,
+                        handle = email,
+                        content = content,
+                        iconUrl = ""
+                    )
 
-                val pushReference = reference.push()
-                pushReference.setValue(tweet)
+                    val pushReference = reference.push()
+                    pushReference.setValue(tweet)
+                }
             }
         }
 
@@ -93,32 +95,5 @@ class TweetsActivity : AppCompatActivity() {
                 recyclerView.layoutManager = LinearLayoutManager(this@TweetsActivity) // Sets scrolling direction to vertical
             }
         })
-    }
-
-    private fun getTweetsFromTwitter(address: Address) {
-        val twitterManager = TwitterManager()
-        val apiKey = getString(R.string.twitter_api_key)
-        val apiSecret = getString(R.string.twitter_api_secret)
-
-        tweetContent.visibility = View.GONE
-        addTweet.visibility = View.GONE
-
-        doAsync {
-            try {
-                val oAuthToken = twitterManager.retrieveOAuthToken(apiKey, apiSecret)
-                val tweets = twitterManager.retrieveTweets(oAuthToken, address.latitude, address.longitude)
-
-                runOnUiThread {
-                    val adapter = TweetsAdapter(tweets)
-                    recyclerView.adapter = adapter
-                    recyclerView.layoutManager = LinearLayoutManager(this@TweetsActivity) // Sets scrolling direction to vertical
-                }
-            } catch(exception: Exception) {
-                Log.e("TweetsActivity", "Twitter API failed!", exception)
-                runOnUiThread {
-                    Toast.makeText(this@TweetsActivity, "Failed to retrieve Tweets!", Toast.LENGTH_LONG).show()
-                }
-            }
-        }
     }
 }

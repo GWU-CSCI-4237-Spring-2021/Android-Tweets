@@ -26,7 +26,12 @@ import com.google.android.gms.maps.model.MarkerOptions
 import com.google.firebase.auth.FirebaseAuth
 import org.jetbrains.anko.doAsync
 
+
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
+
+    companion object {
+        public val BUNDLE_KEY_ADDRESS = "address"
+    }
 
     private lateinit var mMap: GoogleMap
 
@@ -61,7 +66,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         confirm.setOnClickListener {
             if (currentAddress != null) {
                 val intent = Intent(this, TweetsActivity::class.java)
-                intent.putExtra("address", currentAddress)
+                intent.putExtra(BUNDLE_KEY_ADDRESS, currentAddress)
                 startActivity(intent)
             }
         }

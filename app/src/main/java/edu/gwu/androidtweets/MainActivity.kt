@@ -71,6 +71,10 @@ class MainActivity : AppCompatActivity() {
             val inputtedUsername: String = username.text.toString()
             val inputtedPassword: String = password.text.toString()
 
+            if (BuildConfig.DEBUG) {
+                Log.d("MainActivity", "Logging the user in as $inputtedUsername / $inputtedPassword")
+            }
+
             firebaseAuth
                 .signInWithEmailAndPassword(inputtedUsername, inputtedPassword)
                 .addOnCompleteListener { task: Task<AuthResult> ->
