@@ -33,11 +33,27 @@ class MainActivity : AppCompatActivity() {
     private lateinit var firebaseAuth: FirebaseAuth
     private lateinit var firebaseAnalytics: FirebaseAnalytics
 
+    private lateinit var shakeManager: ShakeManager
+
+    override fun onResume() {
+        super.onResume()
+        shakeManager.detectShakes {
+
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        shakeManager.stopDetectingShakes()
+    }
+
     // onCreate is called the first time the Activity is to be shown to the user, so it a good spot
     // to put initialization logic.
     @SuppressLint("MissingPermission")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        shakeManager = ShakeManager(this)
 
         firebaseAuth = FirebaseAuth.getInstance()
         firebaseAnalytics = FirebaseAnalytics.getInstance(this)
